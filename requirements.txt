@@ -5,8 +5,13 @@ ipympl==0.7.0
 jupyter_contrib_nbextensions>=0.5.1,<1
 jupyterlab>=3.1.5,<4
 jedi>=0.17.2,<0.18
+<<<<<<< Updated upstream
 matplotlib>=2.2.2,<3
 numpy>=1.16.3,<2
+=======
+matplotlib>=3.5.2,<4
+numpy>=1.21.6,<2
+>>>>>>> Stashed changes
 palettable>=3.3.0,<4
 pandas>=0.23.3,<1
 requests>=2.25.1,<3
