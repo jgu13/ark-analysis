@@ -30,5 +30,6 @@ Pipfile.lock
 .coverage
 .python-version
 
-data/Test_nuclear_data/
+data/Test_nuclear_data
 
+target_isotope.json

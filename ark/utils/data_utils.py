@@ -2,6 +2,7 @@ import os
 import math
 import feather
 import skimage.io as io
+from skimage.morphology import opening, diamond, square
 import numpy as np
 import xarray as xr
 
@@ -283,11 +284,31 @@ def relabel_segmentation(labeled_image, labels_dict):
         img[labeled_image == cell_id] = labels_dict.get(cell_id, default_label)
     return img
 
+# TODO: Execute Preprocessing steps to a given image
+def preprocess(preprocesses, img, **kwargs):
+    '''
+    preprocesses (list):
+        a list of preprocessing operations
+    img (numpy array):
+        a loaded image in the form of a numpy array
+    '''
+    for p in preprocesses:
+        if p == 'opening':
+            footprint_shape = kwargs['footprint']
+            radius = kwargs['radius']
+            if footprint_shape == 'diamond':
+                footprint = diamond(radius)
+            elif footprint_shape == 'square':
+                footprint = square(radius)
+
+            img = opening(img, footprint)
+        
+    return img
 
 # TODO: Add metadata for channel name (eliminates need for fixed-order channels)
 def generate_deepcell_input(data_dir, tiff_dir, nuc_channels, mem_channels, fovs,
                             is_mibitiff=False, img_sub_folder="TIFs", batch_size=5,
-                            dtype="int16"):
+                            dtype="int16", nucs_preprocesses=[], mems_preprocesses=[], **kwargs):
     """Saves nuclear and membrane channels into deepcell input format.
     Either nuc_channels or mem_channels should be specified.
 
@@ -313,6 +334,12 @@ def generate_deepcell_input(data_dir, tiff_dir, nuc_channels, mem_channels, fovs
             the number of fovs to process at once for each batch
         dtype (str/type):
             optional specifier of image type.  Overwritten with warning for float images
+        nucs_preprocesses (list):
+            a list of preprocessing steps that will be applied to the nuclear marker image
+        nucs_preprocesses (list):
+            a list of preprocessing steps that will be applied to all membrane/cytoplasm marker images
+        **kwargs:
+            specify other key word arguments to be used for preprocessing
     Raises:
         ValueError:
             Raised if nuc_channels and mem_channels are both None or empty
@@ -349,8 +376,10 @@ def generate_deepcell_input(data_dir, tiff_dir, nuc_channels, mem_channels, fovs
             # sum over channels and add to output
             if nuc_channels:
                 out[0] = np.sum(data_xr.loc[fov, :, :, nuc_channels].values, axis=2)
+                out[0] = preprocess(nucs_preprocesses, out[0], **kwargs)
             if mem_channels:
                 out[1] = np.sum(data_xr.loc[fov, :, :, mem_channels].values, axis=2)
+                out[1] = preprocess(mems_preprocesses, out[1], **kwargs)
 
             save_path = os.path.join(data_dir, f"{fov}.tif")
             io.imsave(save_path, out, plugin='tifffile', check_contrast=False)
