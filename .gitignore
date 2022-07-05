@@ -18,18 +18,15 @@ env
 
 /build
 /dist
+/data/Test_nuclear_data
 
 */_build
 */_markdown
 */visualizations
 
-data/example_dataset/metaclustering/*output*.csv
-data/example_dataset/metaclustering/example_manually_adjust_metaclusters.ipynb
 Pipfile
 Pipfile.lock
 .coverage
 .python-version
-
-data/Test_nuclear_data
 
 target_isotope.json

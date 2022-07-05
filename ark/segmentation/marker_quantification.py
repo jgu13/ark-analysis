@@ -14,6 +14,8 @@ from ark.segmentation.regionprops_extraction import REGIONPROPS_FUNCTION
 
 import ark.settings as settings
 
+from ark.utils.data_utils import preprocess
+
 
 def get_single_compartment_props(segmentation_labels, regionprops_base,
                                  regionprops_single_comp, **kwargs):
@@ -435,7 +437,8 @@ def create_marker_count_matrices(segmentation_labels, image_data, nuclear_counts
 
 def generate_cell_table(segmentation_dir, tiff_dir, img_sub_folder="TIFs",
                         is_mibitiff=False, fovs=None, batch_size=5, dtype="int16",
-                        extraction='total_intensity', nuclear_counts=False, **kwargs):
+                        extraction='total_intensity', nuclear_counts=False, nuc_channels=[], mems_channels=[], 
+                        nucs_preprocesses=[], mems_preprocesses=[], **kwargs):
     """This function takes the segmented data and computes the expression matrices batch-wise
     while also validating inputs
 
@@ -461,8 +464,17 @@ def generate_cell_table(segmentation_dir, tiff_dir, img_sub_folder="TIFs",
         nuclear_counts (bool):
             boolean flag to determine whether nuclear counts are returned, note that if
             set to True, the compartments coordinate in segmentation_labels must contain 'nuclear'
+        nuc_channels (list):
+            list of channels name of nuclei images
+        mems_channels (list):
+            list of channels name of membrane images
+        nucs_preprocess (list):
+            list preprocess operations that will be applied to nuclei images
+        mems_preprocess (list):
+            list of preprocess operations that will be applied to all membrane images
         **kwargs:
             arbitrary keyword arguments for signal and regionprops extraction
+            can be used to make modifications to marker signal images
 
     Returns:
         tuple (pandas.DataFrame, pandas.DataFrame):
@@ -514,6 +526,16 @@ def generate_cell_table(segmentation_dir, tiff_dir, img_sub_folder="TIFs",
                                                         img_sub_folder=img_sub_folder,
                                                         fovs=batch_names,
                                                         dtype=dtype)
+        
+        # TODO: apply preprocess operations to nuclei or membrane images
+        if nucs_preprocesses or mems_preprocesses:
+            for batch_name in batch_names:
+                for nuc_channel in nuc_channels:
+                    image_data.loc[batch_name, :, :, nuc_channel] = \
+                        preprocess(nucs_preprocesses, image_data.loc[batch_name, :, :, nuc_channel].values, **kwargs)
+                for mem_channel in mems_channels:
+                    image_data.loc[batch_name, :, :, mem_channel] = \
+                        preprocess(mems_preprocesses, image_data.loc[batch_name, :, :, mem_channel].values, **kwargs)
 
         # define the files for whole cell and nuclear
         whole_cell_files = [fov + '_feature_0.tif' for fov in batch_names]

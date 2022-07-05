@@ -36,6 +36,11 @@ REGIONPROPS_SINGLE_COMP = ['major_minor_axis_ratio', 'perim_square_over_area',
                            'centroid_dif', 'num_concavities']
 REGIONPROPS_MULTI_COMP = ['nc_ratio']
 
+# # set to these to empty so I will solely get marker counts
+# REGIONPROPS_BASE = []
+# REGIONPROPS_SINGLE_COMP = []
+# REGIONPROPS_MULTI_COMP = []
+
 # spatial-LDA minimum required columns
 BASE_COLS = [FOV_ID, CELL_LABEL, CELL_SIZE, CENTROID_0, CENTROID_1, CLUSTER_ID, KMEANS_CLUSTER]
 

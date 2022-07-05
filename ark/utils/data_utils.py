@@ -284,7 +284,7 @@ def relabel_segmentation(labeled_image, labels_dict):
         img[labeled_image == cell_id] = labels_dict.get(cell_id, default_label)
     return img
 
-# TODO: Execute Preprocessing steps to a given image
+# TODO: Execute Preprocessing steps to a given image stack
 def preprocess(preprocesses, img, **kwargs):
     '''
     preprocesses (list):
@@ -293,16 +293,15 @@ def preprocess(preprocesses, img, **kwargs):
         a loaded image in the form of a numpy array
     '''
     for p in preprocesses:
-        if p == 'opening':
+        if p == 'opening': # Only 'opening' is implemented for now
             footprint_shape = kwargs['footprint']
             radius = kwargs['radius']
             if footprint_shape == 'diamond':
                 footprint = diamond(radius)
             elif footprint_shape == 'square':
                 footprint = square(radius)
-
             img = opening(img, footprint)
-        
+             
     return img
 
 # TODO: Add metadata for channel name (eliminates need for fixed-order channels)
@@ -369,17 +368,24 @@ def generate_deepcell_input(data_dir, tiff_dir, nuc_channels, mem_channels, fovs
                 tiff_dir, img_sub_folder=img_sub_folder, fovs=fovs, channels=channels, dtype=dtype
             )
 
+
         # write each fov data to data_dir
         for fov in data_xr.fovs.values:
             out = np.zeros((2, data_xr.shape[1], data_xr.shape[2]), dtype=data_xr.dtype)
 
             # sum over channels and add to output
             if nuc_channels:
-                out[0] = np.sum(data_xr.loc[fov, :, :, nuc_channels].values, axis=2)
-                out[0] = preprocess(nucs_preprocesses, out[0], **kwargs)
+                img_stack = data_xr.loc[fov, :, :, nuc_channels].values
+                for c in range(img_stack.shape[-1]):
+                    img = preprocess(nucs_preprocesses, img_stack[:, :, c], **kwargs)
+                    img_stack[:, :, c] = img
+                out[0] = np.sum(img_stack, axis=2)
             if mem_channels:
-                out[1] = np.sum(data_xr.loc[fov, :, :, mem_channels].values, axis=2)
-                out[1] = preprocess(mems_preprocesses, out[1], **kwargs)
+                img_stack = data_xr.loc[fov, :, :, mem_channels].values
+                for c in range(img_stack.shape[-1]):
+                    img = preprocess(mems_preprocesses, img_stack[:, :, c], **kwargs)
+                    img_stack[:, :, c] = img
+                out[1] = np.sum(img_stack, axis=2)
 
             save_path = os.path.join(data_dir, f"{fov}.tif")
             io.imsave(save_path, out, plugin='tifffile', check_contrast=False)
